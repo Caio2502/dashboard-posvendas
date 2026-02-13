@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Detalhe — Serviço (R$)</title>
+<style>
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --line:rgba(17,24,39,0.10);
+  --soft:rgba(0,0,0,0.06);
+}
+
+*{ box-sizing:border-box; }
+body { margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--text); }
+.container { max-width:1200px; margin:18px auto; padding:0 14px; }
+.header { background:var(--card); border-radius:18px; padding:14px 18px; box-shadow:0 12px 32px rgba(0,0,0,0.08); margin-bottom:14px; }
+.header h1 { margin:0; font-size:18px; }
+.header .info { margin-top:6px; font-size:12px; color:#555; }
+.header .total { margin-top:8px; font-size:22px; font-weight:900; }
+
+.section { background:var(--card); border-radius:18px; padding:12px 14px; box-shadow:0 12px 32px rgba(0,0,0,0.08); }
+.section h2 { margin:0 0 10px 0; font-size:14px; }
+
+.home-layout { display:grid; grid-template-columns: 0.80fr 1.5fr; gap:14px; align-items:start; }
+@media (max-width: 980px) { .home-layout { grid-template-columns: 1fr; } }
+
+.grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+@media (max-width: 600px) { .grid { grid-template-columns:1fr; } }
+
+.card-link { text-decoration:none; color:inherit; display:block; }
+.card { background:var(--card); border-radius:16px; padding:10px 10px; box-shadow:0 10px 26px rgba(0,0,0,0.08);
+        cursor:pointer; transition: transform .08s ease, box-shadow .08s ease; border:1px solid var(--soft); }
+.card:hover { transform: translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,0.10); }
+
+.card-top { display:grid; grid-template-columns:40px 1fr 88px; gap:10px; align-items:center; }
+.icon { width:40px; height:40px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.title { font-weight:900; font-size:13px; }
+.subtitle { margin-top:3px; }
+.pill { font-size:10px; padding:3px 7px; border-radius:999px; border:1px solid; display:inline-flex; align-items:center; gap:6px; }
+
+.big-number { font-size:18px; font-weight:900; text-align:right; line-height:1.05; }
+.big-label { font-size:10px; color:#666; text-align:right; margin-top:2px; }
+
+.bar-bg { height:8px; background:#e5e7eb; border-radius:999px; margin:8px 0 6px 0; overflow:hidden; }
+.bar-fill { height:100%; border-radius:999px; }
+
+.metrics { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; font-size:12px; }
+.metrics span { display:block; color:#666; font-size:11px; }
+.metrics strong { font-size:13px; font-weight:900; }
+
+.delta-pos { color:#27AE60; font-weight:900; }
+.delta-neg { color:#E74C3C; font-weight:900; }
+
+.filter-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px 0; }
+.filter-pill { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:#f8fafc; color:var(--text); }
+.btn-mini { display:inline-block; padding:7px 10px; border-radius:12px; background:#111827; color:white; font-size:12px; cursor:pointer; border:0; }
+.helper { font-size:12px; color:#666; margin-top:6px; }
+
+/* ===== TABELA “RETINHA” ===== */
+.table-shell{
+  border-radius:14px;
+  border:1px solid var(--soft);
+  overflow:hidden;
+  background:#fff;
+}
+
+.table-scroll{
+  max-height:360px;
+  overflow:auto;
+}
+
+.table-compact{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed;
+  font-size:12px;
+}
+
+.table-compact col.col-name { width: 44%; }
+.table-compact col.col-num  { width: 14%; } /* meta/real/delta/ating */
+
+.table-compact thead th{
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:#f8fafc;
+  text-align:left;
+  padding:10px 10px;
+  border-bottom:1px solid var(--line);
+  font-weight:900;
+}
+
+.table-compact thead th.num{ text-align:right; }
+
+.table-compact tbody td{
+  padding:4px 8px;
+  border-bottom:1px solid rgba(17,24,39,0.06);
+  vertical-align:top;
+  background:#fff;
+}
+
+.table-compact tbody tr:hover td{
+  background:#fbfdff;
+}
+
+.table-compact td.num{
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-compact td.name-cell{
+  white-space:normal;
+  word-break:break-word;
+  line-height:1.0;
+}
+
+.table-compact tfoot td{
+  position:sticky;
+  bottom:0;
+  z-index:2;
+  background:#f8fafc;
+  padding:10px 10px;
+  border-top:1px solid var(--line);
+  font-weight:900;
+}
+
+.table-compact tfoot td.num{ text-align:right; }
+</style>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🛠️ Detalhamento — Serviço (R$)</h1>
+      <div class="info">Período de apuração: <strong>01/01/2026 até 12/02/2026</strong></div>
+      <div class="info">Atualizado em: 13/02/2026 16:50</div>
+      <div style="margin-top:12px;">
+        <a class="btn-mini" style="text-decoration:none;" href="dashboard_metas_2026.html">← Voltar</a>
+      </div>
+    </div>
+
+    <div class="home-layout" style="grid-template-columns: 1.1fr 0.9fr;">
+      <div>
+        <div class="section">
+          <h2>Meta x Real por Lojas (clique na barra para filtrar colaboradores)</h2>
+          <div id="chart_loja" style="height:360px;"></div>
+          <div class="helper">Clique em uma barra para ver somente aquela loja. Duplo clique (ou "Limpar filtro") volta para todas.</div>
+        </div>
+        </div>
+      <div>
+        <div class="section">
+          <h2>Detalhamento por Colaboradores</h2>
+          <div class="filter-row">
+            <span id="colab_filter_pill" class="filter-pill">Filtro: Todas as lojas</span>
+            <button id="btn_clear_filter" class="btn-mini" type="button">Limpar filtro</button>
+          </div>
+
+          <div class="table-shell">
+            <div class="table-scroll">
+              <table class="table-compact">
+                <colgroup>
+                  <col class="col-name" />
+                  <col class="col-num" />
+                  <col class="col-num" />
+                  <col class="col-num" />
+                  <col class="col-num" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Colaboradores</th>
+                    <th class="num">Meta</th>
+                    <th class="num">Real</th>
+                    <th class="num">Delta</th>
+                    <th class="num">Ating.</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody_colab"></tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total</td>
+                    <td class="num" id="tmeta">0</td>
+                    <td class="num" id="treal">0</td>
+                    <td class="num" id="tdelta">0</td>
+                    <td class="num" id="tating">0%</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+        </div>
+    </div>
+  </div>
+
+
+<script>
+(function () {
+  const lojas = ["Piracicaba", "Avaré", "Itapeva", "Jaú", "Piedade", "Bragança Paulista", "Itapetininga", "Campos de Holambra"];
+  const meta  = [54.0, 81.0, 54.0, 54.0, 54.0, 48.0, 22.0, 22.0];
+  const real  = [104.0, 88.0, 24.0, 28.0, 32.0, 21.0, 6.0, 10.0];
+
+  const dMeta    = [50.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+  const baseMeta = [54.0, 81.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+
+  const dReal    = [0.0, 0.0, 30.0, 26.0, 22.0, 27.0, 16.0, 12.0];
+  const baseReal = [0.0, 0.0, 24.0, 28.0, 32.0, 21.0, 6.0, 10.0];
+
+  const colabData = {"ALL": {"rows": [{"nome": "Marcio Antonio Zope", "meta": 27.0, "real": 100.0, "ating": 370.3703703703704}, {"nome": "Aleson Jose Marques", "meta": 27.0, "real": 43.0, "ating": 159.25925925925927}, {"nome": "Diego Prado Campeão", "meta": 27.0, "real": 40.0, "ating": 148.14814814814815}, {"nome": "Renan Estevão Basilio", "meta": 27.0, "real": 18.0, "ating": 66.66666666666666}, {"nome": "Eduardo Duarte", "meta": 24.0, "real": 16.0, "ating": 66.66666666666666}, {"nome": "João Luiz Pereira Jorge", "meta": 27.0, "real": 15.0, "ating": 55.55555555555556}, {"nome": "Luis Fernandes ramos", "meta": 22.0, "real": 10.0, "ating": 45.45454545454545}, {"nome": "Thiago Carlos Mazoli", "meta": 27.0, "real": 12.0, "ating": 44.44444444444444}, {"nome": "Juan de Oliveira", "meta": 27.0, "real": 11.0, "ating": 40.74074074074074}, {"nome": "Edson Carlos Peiera dos Santos", "meta": 27.0, "real": 9.0, "ating": 33.33333333333333}, {"nome": "Christopher Carneiro Simon", "meta": 22.0, "real": 6.0, "ating": 27.27272727272727}, {"nome": "Thiago Toledo", "meta": 24.0, "real": 5.0, "ating": 20.833333333333336}, {"nome": "Henrique Santana", "meta": 27.0, "real": 4.0, "ating": 14.814814814814813}, {"nome": "Isac de Oliveira", "meta": 27.0, "real": 4.0, "ating": 14.814814814814813}, {"nome": "Juliano Rodrigues Costa", "meta": 0.0, "real": 8.0, "ating": 0.0}, {"nome": "Adailton Antonio da Silva", "meta": 0.0, "real": 5.0, "ating": 0.0}, {"nome": "Jose Augusto Batista fernandes", "meta": 0.0, "real": 4.0, "ating": 0.0}, {"nome": "Carlos Alberto Vieira", "meta": 0.0, "real": 3.0, "ating": 0.0}, {"nome": "Carlos Wilian Arruda Buck", "meta": 27.0, "real": 0.0, "ating": 0.0}], "total": {"meta": 389.0, "real": 313.0, "delta": -76.0, "ating": 80.46272493573264}}, "Avaré": {"rows": [{"nome": "Aleson Jose Marques", "meta": 27.0, "real": 43.0, "ating": 159.25925925925927}, {"nome": "Diego Prado Campeão", "meta": 27.0, "real": 40.0, "ating": 148.14814814814815}, {"nome": "Adailton Antonio da Silva", "meta": 0.0, "real": 5.0, "ating": 0.0}, {"nome": "Carlos Wilian Arruda Buck", "meta": 27.0, "real": 0.0, "ating": 0.0}], "total": {"meta": 81.0, "real": 88.0, "delta": 7.0, "ating": 108.64197530864197}}, "Bragança Paulista": {"rows": [{"nome": "Eduardo Duarte", "meta": 24.0, "real": 16.0, "ating": 66.66666666666666}, {"nome": "Thiago Toledo", "meta": 24.0, "real": 5.0, "ating": 20.833333333333336}], "total": {"meta": 48.0, "real": 21.0, "delta": -27.0, "ating": 43.75}}, "Campos de Holambra": {"rows": [{"nome": "Luis Fernandes ramos", "meta": 22.0, "real": 10.0, "ating": 45.45454545454545}], "total": {"meta": 22.0, "real": 10.0, "delta": -12.0, "ating": 45.45454545454545}}, "Itapetininga": {"rows": [{"nome": "Christopher Carneiro Simon", "meta": 22.0, "real": 6.0, "ating": 27.27272727272727}], "total": {"meta": 22.0, "real": 6.0, "delta": -16.0, "ating": 27.27272727272727}}, "Itapeva": {"rows": [{"nome": "Thiago Carlos Mazoli", "meta": 27.0, "real": 12.0, "ating": 44.44444444444444}, {"nome": "Isac de Oliveira", "meta": 27.0, "real": 4.0, "ating": 14.814814814814813}, {"nome": "Juliano Rodrigues Costa", "meta": 0.0, "real": 8.0, "ating": 0.0}], "total": {"meta": 54.0, "real": 24.0, "delta": -30.0, "ating": 44.44444444444444}}, "Jaú": {"rows": [{"nome": "João Luiz Pereira Jorge", "meta": 27.0, "real": 15.0, "ating": 55.55555555555556}, {"nome": "Edson Carlos Peiera dos Santos", "meta": 27.0, "real": 9.0, "ating": 33.33333333333333}, {"nome": "Jose Augusto Batista fernandes", "meta": 0.0, "real": 4.0, "ating": 0.0}], "total": {"meta": 54.0, "real": 28.0, "delta": -26.0, "ating": 51.85185185185185}}, "Piedade": {"rows": [{"nome": "Renan Estevão Basilio", "meta": 27.0, "real": 18.0, "ating": 66.66666666666666}, {"nome": "Juan de Oliveira", "meta": 27.0, "real": 11.0, "ating": 40.74074074074074}, {"nome": "Carlos Alberto Vieira", "meta": 0.0, "real": 3.0, "ating": 0.0}], "total": {"meta": 54.0, "real": 32.0, "delta": -22.0, "ating": 59.25925925925925}}, "Piracicaba": {"rows": [{"nome": "Marcio Antonio Zope", "meta": 27.0, "real": 100.0, "ating": 370.3703703703704}, {"nome": "Henrique Santana", "meta": 27.0, "real": 4.0, "ating": 14.814814814814813}], "total": {"meta": 54.0, "real": 104.0, "delta": 50.0, "ating": 192.59259259259258}}};
+
+  function fmt(n){
+    try { return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 0 }); }
+    catch(e){ return String(n); }
+  }
+
+  function pctCalc(realV, metaV){
+    const r = Number(realV) || 0;
+    const m = Number(metaV) || 0;
+    return m ? (r/m*100) : 0;
+  }
+
+  function faixaCor(p){
+    p = Number(p) || 0;
+    if (p < 80) return ["#E74C3C", "Crítico"];
+    if (p < 100) return ["#2E86DE", "Abaixo do esperado"];
+    if (p === 100) return ["#27AE60", "Dentro do esperado"];
+    return ["#27AE60", "Melhor que o esperado"];
+  }
+
+  function deltaClass(d){
+    d = Number(d) || 0;
+    return (d >= 0) ? "delta-pos" : "delta-neg";
+  }
+
+  function renderTable(lojaKey){
+    const key = (lojaKey && colabData[lojaKey]) ? lojaKey : "ALL";
+    const pack = colabData[key] || { rows:[], total:{meta:0, real:0, delta:0, ating:0} };
+
+    const pill = document.getElementById("colab_filter_pill");
+    if (pill) pill.textContent = (key === "ALL") ? "Filtro: Todas as lojas" : ("Filtro: " + key);
+
+    const tbody = document.getElementById("tbody_colab");
+    if (tbody){
+      let html = "";
+      const rows = pack.rows || [];
+      for (let i=0; i<rows.length; i++){
+        const r = rows[i];
+        const m = Number(r.meta) || 0;
+        const v = Number(r.real) || 0;
+        const d = v - m;
+        const at = pctCalc(v, m);
+        const corAting = faixaCor(at)[0];
+
+        html += '<tr>'
+          + '<td class="name-cell">' + String(r.nome || "") + '</td>'
+          + '<td class="num">' + fmt(m) + '</td>'
+          + '<td class="num">' + fmt(v) + '</td>'
+          + '<td class="num"><span class="' + deltaClass(d) + '">' + fmt(d) + '</span></td>'
+          + '<td class="num"><span style="color:' + corAting + '; font-weight:900;">' + Math.round(at) + '%</span></td>'
+          + '</tr>';
+      }
+      tbody.innerHTML = html;
+    }
+
+    const t = pack.total || {meta:0, real:0, delta:0, ating:0};
+    const corT = faixaCor(t.ating)[0];
+
+    document.getElementById("tmeta").textContent = fmt(t.meta || 0);
+    document.getElementById("treal").textContent = fmt(t.real || 0);
+    document.getElementById("tdelta").innerHTML = '<span class="' + deltaClass(t.delta) + '">' + fmt(t.delta || 0) + '</span>';
+    document.getElementById("tating").innerHTML = '<span style="color:' + corT + '; font-weight:900;">' + Math.round(t.ating || 0) + '%</span>';
+  }
+
+  const el = document.getElementById("chart_loja");
+  if (el && lojas && lojas.length){
+    const traceMeta = {
+      x: lojas, y: meta, type: "bar", name: "Meta",
+      offsetgroup: "meta",
+      marker: { color: "#4B5563" },
+      text: meta.map(fmt),
+      textposition: "inside",
+      textangle: -45,
+      insidetextanchor: "middle",
+      textfont: { color: "#ffffff", size: 12 },
+      hovertemplate: "Meta: %{y}<extra></extra>"
+    };
+
+    const traceReal = {
+      x: lojas, y: real, type: "bar", name: "Real",
+      offsetgroup: "real",
+      marker: { color: "#7F8C8D" },
+      text: real.map(fmt),
+      textposition: "inside",
+      textangle: -45,
+      insidetextanchor: "middle",
+      textfont: { color: "#ffffff", size: 12 },
+      hovertemplate: "Real: %{y}<extra></extra>"
+    };
+
+    const traceDeltaOnMeta = {
+      x: lojas, y: dMeta, base: baseMeta, type: "bar", name: "Diferença",
+      offsetgroup: "meta",
+      marker: { color: "#66D17A" },
+      text: dMeta.map(v => v ? fmt(v) : ""),
+      textposition: "inside",
+      textangle: -45,
+      insidetextanchor: "middle",
+      textfont: { color: "#0b2e13", size: 12 },
+      hovertemplate: "Diferença: %{y}<extra></extra>",
+      showlegend: true
+    };
+
+    const traceDeltaOnReal = {
+      x: lojas, y: dReal, base: baseReal, type: "bar", name: "Diferença",
+      offsetgroup: "real",
+      marker: { color: "#FF7A7A" },
+      text: dReal.map(v => v ? fmt(v) : ""),
+      textposition: "inside",
+      textangle: -45,
+      insidetextanchor: "middle",
+      textfont: { color: "#4a0a0a", size: 12 },
+      hovertemplate: "Diferença: %{y}<extra></extra>",
+      showlegend: false
+    };
+
+    const layout = {
+      barmode: "group",
+      height: 350,
+      margin: { t: 10, r: 10, b: 90, l: 50 },
+      bargap: 0.07,
+      bargroupgap: 0.05,
+      xaxis: { tickfont: { size: 12 }, tickangle: -45, automargin: true },
+      yaxis: { showticklabels: false, ticks: "", showgrid: false, zeroline: false },
+      legend: { orientation: "h", y: 1.12, x: 0 }
+    };
+
+    Plotly.newPlot("chart_loja",
+      [traceMeta, traceReal, traceDeltaOnMeta, traceDeltaOnReal],
+      layout,
+      { displayModeBar: false, responsive: true }
+    ).then(function(gd){
+      gd.on("plotly_click", function(e){
+        const loja = (e && e.points && e.points[0]) ? String(e.points[0].x) : "ALL";
+        renderTable(loja);
+      });
+      gd.on("plotly_doubleclick", function(){
+        renderTable("ALL");
+      });
+    });
+  }
+
+  const btnClear = document.getElementById("btn_clear_filter");
+  if (btnClear){
+    btnClear.addEventListener("click", function(){
+      renderTable("ALL");
+    });
+  }
+
+  renderTable("ALL");
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard de Metas</title>
+<style>
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --line:rgba(17,24,39,0.10);
+  --soft:rgba(0,0,0,0.06);
+}
+
+*{ box-sizing:border-box; }
+body { margin:0; font-family: Arial, sans-serif; background:var(--bg); color:var(--text); }
+.container { max-width:1200px; margin:18px auto; padding:0 14px; }
+.header { background:var(--card); border-radius:18px; padding:14px 18px; box-shadow:0 12px 32px rgba(0,0,0,0.08); margin-bottom:14px; }
+.header h1 { margin:0; font-size:18px; }
+.header .info { margin-top:6px; font-size:12px; color:#555; }
+.header .total { margin-top:8px; font-size:22px; font-weight:900; }
+
+.section { background:var(--card); border-radius:18px; padding:12px 14px; box-shadow:0 12px 32px rgba(0,0,0,0.08); }
+.section h2 { margin:0 0 10px 0; font-size:14px; }
+
+.home-layout { display:grid; grid-template-columns: 0.80fr 1.5fr; gap:14px; align-items:start; }
+@media (max-width: 980px) { .home-layout { grid-template-columns: 1fr; } }
+
+.grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+@media (max-width: 600px) { .grid { grid-template-columns:1fr; } }
+
+.card-link { text-decoration:none; color:inherit; display:block; }
+.card { background:var(--card); border-radius:16px; padding:10px 10px; box-shadow:0 10px 26px rgba(0,0,0,0.08);
+        cursor:pointer; transition: transform .08s ease, box-shadow .08s ease; border:1px solid var(--soft); }
+.card:hover { transform: translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,0.10); }
+
+.card-top { display:grid; grid-template-columns:40px 1fr 88px; gap:10px; align-items:center; }
+.icon { width:40px; height:40px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.title { font-weight:900; font-size:13px; }
+.subtitle { margin-top:3px; }
+.pill { font-size:10px; padding:3px 7px; border-radius:999px; border:1px solid; display:inline-flex; align-items:center; gap:6px; }
+
+.big-number { font-size:18px; font-weight:900; text-align:right; line-height:1.05; }
+.big-label { font-size:10px; color:#666; text-align:right; margin-top:2px; }
+
+.bar-bg { height:8px; background:#e5e7eb; border-radius:999px; margin:8px 0 6px 0; overflow:hidden; }
+.bar-fill { height:100%; border-radius:999px; }
+
+.metrics { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; font-size:12px; }
+.metrics span { display:block; color:#666; font-size:11px; }
+.metrics strong { font-size:13px; font-weight:900; }
+
+.delta-pos { color:#27AE60; font-weight:900; }
+.delta-neg { color:#E74C3C; font-weight:900; }
+
+.filter-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px 0; }
+.filter-pill { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:#f8fafc; color:var(--text); }
+.btn-mini { display:inline-block; padding:7px 10px; border-radius:12px; background:#111827; color:white; font-size:12px; cursor:pointer; border:0; }
+.helper { font-size:12px; color:#666; margin-top:6px; }
+
+/* ===== TABELA “RETINHA” ===== */
+.table-shell{
+  border-radius:14px;
+  border:1px solid var(--soft);
+  overflow:hidden;
+  background:#fff;
+}
+
+.table-scroll{
+  max-height:360px;
+  overflow:auto;
+}
+
+.table-compact{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  table-layout:fixed;
+  font-size:12px;
+}
+
+.table-compact col.col-name { width: 44%; }
+.table-compact col.col-num  { width: 14%; } /* meta/real/delta/ating */
+
+.table-compact thead th{
+  position:sticky;
+  top:0;
+  z-index:3;
+  background:#f8fafc;
+  text-align:left;
+  padding:10px 10px;
+  border-bottom:1px solid var(--line);
+  font-weight:900;
+}
+
+.table-compact thead th.num{ text-align:right; }
+
+.table-compact tbody td{
+  padding:4px 8px;
+  border-bottom:1px solid rgba(17,24,39,0.06);
+  vertical-align:top;
+  background:#fff;
+}
+
+.table-compact tbody tr:hover td{
+  background:#fbfdff;
+}
+
+.table-compact td.num{
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-compact td.name-cell{
+  white-space:normal;
+  word-break:break-word;
+  line-height:1.0;
+}
+
+.table-compact tfoot td{
+  position:sticky;
+  bottom:0;
+  z-index:2;
+  background:#f8fafc;
+  padding:10px 10px;
+  border-top:1px solid var(--line);
+  font-weight:900;
+}
+
+.table-compact tfoot td.num{ text-align:right; }
+</style>
+<script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Pós-Vendas - Desempenho de metas e resultados</h1>
+    <div class="info">Período de apuração: <strong>01/01/2026 até 12/02/2026</strong></div>
+    <div class="info">Atualizado em: 13/02/2026 16:50</div>
+    <div id="home_total" class="total" style="color:#27AE60;">122% — Melhor que o esperado (Total Geral)</div>
+  </div>
+
+  <div class="home-layout">
+    <div>
+      
+<div class="section">
+  <h2>Performance por Loja — % (Real / Meta)</h2>
+  <div class="filter-row">
+    <span id="home_filter_pill" class="filter-pill">Filtro: Todas as lojas</span>
+    <button id="btn_clear_home" class="btn-mini" type="button">Limpar filtro</button>
+  </div>
+  <div id="chart_home_lojas"></div>
+  <div class="helper">Clique em uma barra para filtrar os cards. Duplo clique (ou "Limpar filtro") volta para todas.</div>
+</div>
+
+    </div>
+    <div>
+      <div class="section">
+        <h2>Indicadores por Tipo</h2>
+        <div id="cards_host" class="grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  const lojas = ["Piedade", "Itapetininga", "Avaré", "Campos de Holambra", "Jaú", "Bragança Paulista", "Piracicaba", "Itapeva"];
+  const pcts  = [73.78048780487805, 76.0797342192691, 76.66666666666667, 92.35668789808918, 96.12612612612612, 142.73743016759778, 174.63002114164905, 218.04123711340205];
+  const media = 118.80229889220975;
+  const cardsData = {"ALL": {"cards": [{"Tipo": "Peças (R$)", "Meta": 504.0, "Real": 618.0}, {"Tipo": "Pneus (Unidade)", "Meta": 15.0, "Real": 35.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 2808.0, "Real": 3816.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 157.0, "Real": 146.0}, {"Tipo": "Serviço (R$)", "Meta": 389.0, "Real": 313.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 254.0, "Real": 101.0}, {"Tipo": "CRM (Leads)", "Meta": 135.0, "Real": 175.0}]}, "Avaré": {"cards": [{"Tipo": "Peças (R$)", "Meta": 74.0, "Real": 77.0}, {"Tipo": "Pneus (Unidade)", "Meta": 2.0, "Real": 2.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 248.0, "Real": 180.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 24.0, "Real": 0.0}, {"Tipo": "Serviço (R$)", "Meta": 81.0, "Real": 88.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 54.0, "Real": 8.0}, {"Tipo": "CRM (Leads)", "Meta": 27.0, "Real": 36.0}]}, "Bragança Paulista": {"cards": [{"Tipo": "Peças (R$)", "Meta": 51.0, "Real": 34.0}, {"Tipo": "Pneus (Unidade)", "Meta": 2.0, "Real": 2.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 194.0, "Real": 420.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 15.0, "Real": 2.0}, {"Tipo": "Serviço (R$)", "Meta": 48.0, "Real": 21.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 30.0, "Real": 8.0}, {"Tipo": "CRM (Leads)", "Meta": 18.0, "Real": 24.0}]}, "Campos de Holambra": {"cards": [{"Tipo": "Peças (R$)", "Meta": 16.0, "Real": 5.0}, {"Tipo": "Pneus (Unidade)", "Meta": 0.0, "Real": 0.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 93.0, "Real": 120.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 4.0, "Real": 0.0}, {"Tipo": "Serviço (R$)", "Meta": 22.0, "Real": 10.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 13.0, "Real": 6.0}, {"Tipo": "CRM (Leads)", "Meta": 9.0, "Real": 4.0}]}, "Itapetininga": {"cards": [{"Tipo": "Peças (R$)", "Meta": 37.0, "Real": 67.0}, {"Tipo": "Pneus (Unidade)", "Meta": 1.0, "Real": 4.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 209.0, "Real": 142.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 10.0, "Real": 0.0}, {"Tipo": "Serviço (R$)", "Meta": 22.0, "Real": 6.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 13.0, "Real": 3.0}, {"Tipo": "CRM (Leads)", "Meta": 9.0, "Real": 7.0}]}, "Itapeva": {"cards": [{"Tipo": "Peças (R$)", "Meta": 47.0, "Real": 29.0}, {"Tipo": "Pneus (Unidade)", "Meta": 1.0, "Real": 2.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 223.0, "Real": 732.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 9.0, "Real": 21.0}, {"Tipo": "Serviço (R$)", "Meta": 54.0, "Real": 24.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 36.0, "Real": 11.0}, {"Tipo": "CRM (Leads)", "Meta": 18.0, "Real": 27.0}]}, "Jaú": {"cards": [{"Tipo": "Peças (R$)", "Meta": 138.0, "Real": 311.0}, {"Tipo": "Pneus (Unidade)", "Meta": 2.0, "Real": 15.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 821.0, "Real": 602.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 41.0, "Real": 85.0}, {"Tipo": "Serviço (R$)", "Meta": 54.0, "Real": 28.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 36.0, "Real": 9.0}, {"Tipo": "CRM (Leads)", "Meta": 18.0, "Real": 17.0}]}, "Piedade": {"cards": [{"Tipo": "Peças (R$)", "Meta": 48.0, "Real": 27.0}, {"Tipo": "Pneus (Unidade)", "Meta": 3.0, "Real": 0.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 316.0, "Real": 220.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 17.0, "Real": 25.0}, {"Tipo": "Serviço (R$)", "Meta": 54.0, "Real": 32.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 36.0, "Real": 13.0}, {"Tipo": "CRM (Leads)", "Meta": 18.0, "Real": 46.0}]}, "Piracicaba": {"cards": [{"Tipo": "Peças (R$)", "Meta": 93.0, "Real": 68.0}, {"Tipo": "Pneus (Unidade)", "Meta": 4.0, "Real": 10.0}, {"Tipo": "Lubrificantes (Litros)", "Meta": 704.0, "Real": 1400.0}, {"Tipo": "Coolant / Aditivo Diesel (Litros)", "Meta": 37.0, "Real": 13.0}, {"Tipo": "Serviço (R$)", "Meta": 54.0, "Real": 104.0}, {"Tipo": "Itens de Revisão (R$)", "Meta": 36.0, "Real": 43.0}, {"Tipo": "CRM (Leads)", "Meta": 18.0, "Real": 14.0}]}};
+  const slugMap = {"Peças (R$)": "pecas", "Pneus (Unidade)": "pneus", "Lubrificantes (Litros)": "lubrificantes", "Coolant / Aditivo Diesel (Litros)": "coolant_aditivo_diesel", "Serviço (R$)": "servico", "Itens de Revisão (R$)": "itens_de_revisao", "CRM (Leads)": "crm"};
+  const iconMap = {"Peças (R$)": "⚙️", "Pneus (Unidade)": "🛞", "Lubrificantes (Litros)": "🧴", "Coolant / Aditivo Diesel (Litros)": "🧪", "Serviço (R$)": "🛠️", "Itens de Revisão (R$)": "📋", "CRM (Leads)": "🧑‍💼"};
+
+  function corPct(p){
+    p = Number(p) || 0;
+    if (p < 80) return "#E74C3C";
+    if (p < 100) return "#2E86DE";
+    return "#27AE60";
+  }
+
+  function faixaTexto(p){
+    p = Number(p) || 0;
+    if (p < 80) return "Crítico";
+    if (p < 100) return "Abaixo do esperado";
+    if (p === 100) return "Dentro do esperado";
+    return "Melhor que o esperado";
+  }
+
+  function fmt(n){
+    try { return Number(n).toLocaleString("pt-BR", { maximumFractionDigits: 0 }); }
+    catch(e){ return String(n); }
+  }
+
+  function renderCards(lojaKey){
+    const key = (lojaKey && cardsData[lojaKey]) ? lojaKey : "ALL";
+    const pack = cardsData[key] || { cards: [] };
+
+    const pill = document.getElementById("home_filter_pill");
+    if (pill) pill.textContent = (key === "ALL") ? "Filtro: Todas as lojas" : ("Filtro: " + key);
+
+    let sumMeta = 0, sumReal = 0;
+    for (let i=0; i<pack.cards.length; i++){
+      sumMeta += Number(pack.cards[i].Meta) || 0;
+      sumReal += Number(pack.cards[i].Real) || 0;
+    }
+    const ating = sumMeta ? (sumReal/sumMeta*100) : 0;
+    const corT = corPct(ating);
+    const txtT = faixaTexto(ating);
+
+    const totalEl = document.getElementById("home_total");
+    if (totalEl){
+      totalEl.style.color = corT;
+      totalEl.textContent = Math.round(ating) + "% — " + txtT + " (Total Geral)";
+    }
+
+    const host = document.getElementById("cards_host");
+    if (!host) return;
+
+    let html = "";
+    for (let i=0; i<pack.cards.length; i++){
+      const c = pack.cards[i];
+      const tipo = String(c.Tipo || "");
+      const meta = Number(c.Meta) || 0;
+      const real = Number(c.Real) || 0;
+      const p = meta ? (real/meta*100) : 0;
+      const cor = corPct(p);
+      const status = faixaTexto(p);
+      const barW = Math.min(p, 100);
+      const delta = real - meta;
+      const deltaClass = (delta >= 0) ? "delta-pos" : "delta-neg";
+
+      const slug = slugMap[tipo] || "detalhe";
+      const link = "detalhe_" + slug + ".html";
+      const icon = iconMap[tipo] || "📌";
+
+      html += ''
+      + '<a class="card-link" href="' + link + '">'
+      + '  <div class="card" title="Clique para abrir o detalhe">'
+      + '    <div class="card-top">'
+      + '      <div class="icon" style="background:' + cor + '15; border:1px solid ' + cor + '40;">' + icon + '</div>'
+      + '      <div class="title-block">'
+      + '        <div class="title">' + tipo + '</div>'
+      + '        <div class="subtitle"><span class="pill" style="color:' + cor + '; background:' + cor + '15; border-color:' + cor + '40;">' + status + '</span></div>'
+      + '      </div>'
+      + '      <div class="big">'
+      + '        <div class="big-number" style="color:' + cor + ';">' + Math.round(p) + '%</div>'
+      + '        <div class="big-label">Atingimento</div>'
+      + '      </div>'
+      + '    </div>'
+      + '    <div class="bar-bg"><div class="bar-fill" style="width:' + Math.round(barW) + '%; background:' + cor + ';"></div></div>'
+      + '    <div class="metrics">'
+      + '      <div><span>Meta</span><strong>' + fmt(meta) + '</strong></div>'
+      + '      <div><span>Real</span><strong>' + fmt(real) + '</strong></div>'
+      + '      <div><span>Delta</span><strong class="' + deltaClass + '">' + fmt(delta) + '</strong></div>'
+      + '    </div>'
+      + '  </div>'
+      + '</a>';
+    }
+
+    host.innerHTML = html;
+  }
+
+  const colors = pcts.map(corPct);
+
+  const trace = {
+    x: pcts,
+    y: lojas,
+    type: "bar",
+    orientation: "h",
+    marker: { color: colors },
+    text: pcts.map(v => Math.round(v) + "%"),
+    textposition: "inside",
+    insidetextanchor: "middle",
+    textfont: { color: "#ffffff", size: 14, family: "Arial" },
+    hovertemplate: "%{y}<br>%{x:.0f}%<extra></extra>"
+  };
+
+  const layout = {
+    height: Math.max(440, lojas.length * 26),
+    margin: { t: 10, r: 10, b: 35, l: 120 },
+    xaxis: { showticklabels:false, showgrid:false, zeroline:false, ticks:"" },
+    yaxis: { automargin:true },
+    shapes: [{
+      type: "line",
+      xref: "x", x0: media, x1: media,
+      yref: "paper", y0: 0, y1: 1,
+      line: { width: 2, dash: "dash", color: "#111827" }
+    }],
+    annotations: [{
+      xref:"x", x: media,
+      yref:"paper", y: 1,
+      text: "Média: " + Math.round(media) + "%",
+      showarrow:false,
+      yshift: 14,
+      font:{ size:13, color:"#111827" },
+      bgcolor:"rgba(255,255,255,0.90)",
+      bordercolor:"rgba(0,0,0,0.12)",
+      borderwidth:1
+    }]
+  };
+
+  Plotly.newPlot("chart_home_lojas", [trace], layout, { displayModeBar:false, responsive:true })
+    .then(function(gd){
+      gd.on("plotly_click", function(e){
+        const loja = (e && e.points && e.points[0]) ? String(e.points[0].y) : "ALL";
+        renderCards(loja);
+      });
+      gd.on("plotly_doubleclick", function(){
+        renderCards("ALL");
+      });
+    });
+
+  const btnClear = document.getElementById("btn_clear_home");
+  if (btnClear){
+    btnClear.addEventListener("click", function(){ renderCards("ALL"); });
+  }
+
+  renderCards("ALL");
+})();
+</script>
+
+
+</body>
+</html>
